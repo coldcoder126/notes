@@ -516,41 +516,70 @@ public void accountMoney(int money){
 
 ```java
 /*
-默认的事务传播行为，如果存在当前事务，则加入，如果不存在事务，则创建一个新事务。
-*/
-int PROPAGATION_REQUIRED = 0;
-
-/*
 如果当前存在一个事务，则加入当前事务，如果不存在，则直接执行。
 对于一些查询方法来说，PROPAGATION_SUPPORTS比较适合，如果当前方法被其他方法调用，而其他方法启动了一个事务，此行为可以保证当前方法加入当前事务，并洞察当前事务对数据资源所做的更新。其他传播方式则看不到更新，因为当前事务没有提交。
 */
-int PROPAGATION_SUPPORTS = 1;
+PROPAGATION_SUPPORTS
+    
+/**-------------- 以下四个受外围事务影响---------------*/
 
 /*
-PROPAGATION_MANDATORY强制要求当前存在一个事务，如果不存在，则抛出异常。
+默认的事务传播行为，如果外围函数存在事务，则加入，如果不存在事务，用自己的事务。
 */
-int PROPAGATION_MANDATORY = 2;
+PROPAGATION_REQUIRED
 
 /*
-不管当前是否存在事务， 都会创建一个新的事务。如果当前存在事务，会将当前事务挂起。如果某个业务对象不想影响外层事务，可以选择PROPAGATION_REQUIRES_NEW。
+不管外围是否存在事务，都会使用自己的事务。如果外围存在事务，会将外围事务挂起。如果某个业务对象不想影响外层事务，可以选择PROPAGATION_REQUIRES_NEW。
 */
-int PROPAGATION_REQUIRES_NEW = 3;
-
-/*
-不支持当前事务，而是在没有事务的情况下执行。如果当前存在事务，则将当前事务挂起，但要看PlatformTransactionManager的实现类是否支持事务的挂起。
-*/
-int PROPAGATION_NOT_SUPPORTED = 4;
-
-/*
-永远不支持事务，如果存在事务，则抛出异常。
-*/
-int PROPAGATION_NEVER = 5;
+PROPAGATION_REQUIRES_NEW
 
 /*
 如果存在事务，则在当前事务的一个嵌套事务中执行。与PROPAGATION_REQUIRES_NEW类似，但与PROPAGATION_REQUIRES_NEW创建的事务与原有事务为同一档次，在新事务运行时原有事务被挂起；PROPAGATION_NESTED创建的事务寄生在外层事务，地位比外层事务低，嵌套事务执行时外层事务也处于活跃状态。
 */
-int PROPAGATION_NESTED = 6;
+PROPAGATION_NESTED
+
+/*
+PROPAGATION_MANDATORY强制要求当前存在一个事务，如果不存在，则抛出异常。
+*/
+PROPAGATION_MANDATORY
+
+
+/**-------------- 以下两个不需要外围事务，或不受外围事务影响---------------*/
+
+/*
+不支持当前事务，而是在没有事务的情况下执行。如果当前存在事务，则将当前事务挂起，但要看PlatformTransactionManager的实现类是否支持事务的挂起。
+即外围的事务管不了内围事务
+*/
+PROPAGATION_NOT_SUPPORTED
+
+/*
+永远不支持事务，如果存在事务，则抛出异常。
+*/
+PROPAGATION_NEVER
 ```
+
+| 内部事务类型             | 外围方法是否开启事务 | 结果                                                         |
+| ------------------------ | -------------------- | ------------------------------------------------------------ |
+| Propagation.REQUIRED     | 是                   | 所有`Propagation.REQUIRED`修饰的内部方法和外围方法均属于同一事务，只要一个方法回滚，整个事务均回滚 |
+| Propagation.REQUIRED     | 否                   | `Propagation.REQUIRED`修饰的内部方法会新开启自己的事务，且开启的事务相互独立，互不干扰。 |
+| Propagation.REQUIRES_NEW | 是                   | `Propagation.REQUIRES_NEW`修饰的内部方法依然会单独开启独立事务，且与外部方法事务也独立，内部方法之间、内部方法和外部方法事务均相互独立，互不干扰 |
+| Propagation.REQUIRES_NEW | 否                   | `Propagation.REQUIRES_NEW`修饰的内部方法会新开启自己的事务，且开启的事务相互独立，互不干扰 |
+| Propagation.NESTED       | 是                   | `Propagation.NESTED`修饰的内部方法属于外部事务的子事务，外围主事务回滚，子事务一定回滚，而内部子事务可以单独回滚而不影响外围主事务和其他子事务 |
+| Propagation.NESTED       | 否                   | `Propagation.NESTED`和`Propagation.REQUIRED`作用相同，修饰的内部方法都会新开启自己的事务，且开启的事务相互独立，互不干扰 |
+|                          |                      |                                                              |
+|                          |                      |                                                              |
+|                          |                      |                                                              |
+|                          |                      |                                                              |
+
+###REQUIRED,REQUIRES_NEW,NESTED 异同
+
+**NESTED 和 REQUIRED 修饰的内部方法都属于外围方法事务，如果外围方法抛出异常，这两种方法的事务都会被回滚。但是 REQUIRED 是加入外围方法事务，所以和外围事务同属于一个事务，一旦 REQUIRED 事务抛出异常被回滚，外围方法事务也将被回滚。而 NESTED 是外围方法的子事务，有单独的保存点，所以 NESTED 方法抛出异常被回滚，不会影响到外围方法的事务。**
+
+**NESTED 和 REQUIRES_NEW 都可以做到内部方法事务回滚而不影响外围方法事务。但是因为 NESTED 是嵌套事务，所以外围方法回滚之后，作为外围方法事务的子事务也会被回滚。而 REQUIRES_NEW 是通过开启新的事务实现的，内部事务和外围事务是两个事务，外围事务回滚不会影响内部事务。**
+
+
+
+
 
 ### 事务的隔离级别
 

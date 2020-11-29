@@ -53,15 +53,83 @@
 
 代码块的加载顺序大于构造方法
 
-`==` 和`equals`
+##== 和equals
 
 `==`：如果比较的是基本类型，比较的是值是否相等；如果比较的是引用类型，比较的是引用地址是否相等
 
 `equals` :比较引用类型，如果没有覆写，equals方法就是`==` ，比较的是地址。覆写过要看具体方法中的比较内容
 
-## 静态字段和静态方法
+正确的覆写`equal(Object obj)`方法，其参数必须为Object类
 
-类中的静态字段并不属于某个实例，所有实例公用一个静态字段。
+编写完美equals方法的建议：
+
+> 1. 显示参数命名为`otherObject`，稍后需要将它强制转换为另一个名为`other`的变量
+>
+> 2. 检查this与`otherObject`是否相等：`if (this == otherObject) return true;`
+>
+> 3. 检查`otherObject`是否为null，如果为null，返回false，这项检查很有必要。
+>
+> 4. 比较this与otherObject的类，如果equals的语义可以在子类中改变，就使用getClass检测：
+>
+>    `if (getClass() != otherObject.getClass()) return false;`
+>
+>    如果所有的子类都有相同的相等性语义，可以使用instanceof检测：
+>
+>     `if(!(otherObject instanceof ClassName)) return false;`
+>
+> 5. 将otherObject强制转换为相应类类型的变量：
+>
+>    `ClassName other = (ClassName)otherObject`
+>
+> 6. 根据相等性概念的要求来比较字段
+>
+>    `return field1 == other.field1&&field2.equals(other.field2)&&...`
+
+##hashCode
+
+散列码是由对象导出的一个整型值。hashCode方法定义在Object类中，其值由对象的存储地址得出
+
+重写hashCode，有一个好方法是使用Object类的静态方法，该方法会自动组合参数的散列值并返回。
+
+```java
+static int hash(Object, ...);
+```
+
+
+
+> equals与hashCode的定义必须相容，x.equals(y)为true，那么x.hashCode()就必须和y.hashCode()相等。
+>
+> 因为插入散列表的时候使用的是对象的hashCode，若x.equals(y)为true而两者的hashCode不相等，放入Set时就会导致出现两个值一样的对象，导致混淆
+
+## 输入与输出
+
+###输入
+
+要想通过控制台进行输入，首先要构造一个与“标准输入流”`System.in`关联的`Scanner`对象，然后就能使用Scanner类的各种方法进行读取输入了
+
+```java
+Scanner in = new Scanner(System.in);
+String word = in.next();	//读取一个单词,以空白符作为分隔
+String phrase = in.nextLine();	//读取一行输入
+int x = in.nextInt();	//读取一个整数
+double y = in.nextDouble();	//读取一个浮点数
+
+//检测是否还有下一个输入
+boolean hasNext();
+boolean hasNextInt();
+boolean hasNextDouble();
+```
+
+### 输出
+
+格式化输出 
+
+```java
+System.out.println("hello,%s",name);
+System.out.println("%8.2",x);
+```
+
+
 
 ## 大数：BigInteger和BigDecimal
 
@@ -113,7 +181,7 @@ int[] d = Arrays.copyOf(b, 10);	//第二个参数是新数组的长度
 Arrays.sort(a);	//数组排序，使用优化的快速排序算法
 ```
 
-**Array类**
+###Array类
 
 该类包含用于操作数组的各种方法，常用方法
 
@@ -127,30 +195,96 @@ static void fill(T[] a,T t); //将数组的所有元素都设置为t
 static boolean equals(T[] a,T[] b); //如果两个数组大小相同并且下标对应的值都相当，返回true
 ```
 
-## 日期类
+### ArrayList
 
-Date
+```java
+ArrayList<E>();	//构造一个空数组列表
+ArrayList<E>(int capacity);	//指定容量构造一个空数组
+boolean add(E obj);	//	在数组的末尾追加一个元素，永远返回true
+int size();	//返回当前元素个数
+void trimToSize();	//将数组的容量削减到当前大小，减少空间占用
+```
 
-LocalDate
 
 
 
 
 
-# String相关
 
-## String
+#不一般的类
+
+## 日期相关
+
+### Date类
+
+使用时间点来表示日期
+
+```java
+Date date = new Date();
+System.out.println(date);
+//Mon Nov 23 21:01:08 CST 2020
+long time = date.getTime(); 
+System.out.println(time);
+//1606137751454
+```
+
+###LocalDate类
+
+使用日历表示法来表示日期
+
+```java
+//通常使用静态工厂方法来构造它
+LocalDate now = LocalDate.now();
+System.out.println(now);	//2020-11-23
+
+//也可以提供年月日来构造
+LocalDate.of(2020, 11, 11);
+
+now.getYear(); 	//获取LocalDate的年份，还可以getMonthValue(),getDayofMonth()等
+now.plusDays(100);		//生成now之后100天的日期
+now.minusDays(100);		//生成now之前100天得日期
+```
+
+### LocalDateTime类
+
+和LocalDate差不多
+
+```java
+LocalDateTime local = LocalDateTime.now();
+System.out.println(local);
+//2020-11-23T21:49:56.489
+```
+
+
+
+##String相关
+
+###String
 
 一个长度为0字符串与null并不相同
 
-字符串常量，字符串长度不可变
+String类对象是不可变的
 
 ```java
 public final class String extends Object 
 implements Serializable, Comparable<String>, CharSequence
 ```
 
-##StringBuffer
+静态方法**format**：`String hello = String.format("Hell0,%s",name);`
+
+```java
+String s1 = "hello";
+String s2 = new String("hello");
+
+System.out.println(s1==s2);				//false
+System.out.println(s1.equals(s2));		//true,String.equals()方法覆写过
+System.out.println(s1.hashCode());		//99162322
+System.out.println(s2.hashCode());		//99162322
+```
+
+
+
+###StringBuffer
 
 可变字符串，执行效率低，线程安全
 
@@ -159,9 +293,9 @@ public final class StringBuffer extends Object
 implements Serializable, CharSequence
 ```
 
+###StringBuilder
 
-
-##StringBuilder
+StringBuilder的前身是StringBuffer
 
 可变字符串。执行效率高，线程不安全。
 
@@ -178,15 +312,150 @@ implements Serializable, CharSequence
 
 如果要操作少量的数据，用String ；单线程操作大量数据，用StringBuilder ；多线程操作大量数据，用StringBuffer。
 
-# Collection
+# 接口、lambda表达式与内部类
+
+## 接口
+
+接口不是类，而是对希望符合这个接口的类的一组需求。
+
+接口中所有方法都自动是public 方法，因此，接口中的方法不必声名为public
+
+与建立类的继承层次一样，接口也可以通过`extends`进行扩展
+
+接口中不能包含实例字段，但是可以包含基本类型的常量，常量字段自动是public static final
+
+**默认方法：**可以为接口方法提供一个默认实现，必须用default修饰符标记这样一个方法。实现这个接口的类可以不用自己实现这个默认方法，因为它已经在接口中实现了，可以在实例中直接调用。
+
+**其他情况**
+
+1. 接口中的默认方法和超类中方法以及参数都一样：此时超类优先 （“类优先”规则）
+2. 连个接口有相同方法：编译器会报错，由程序员去选择实现哪个方法
+
+
+
+###常用接口
+
+**Comparable<T>**
+
+```java
+public interface Comparable<T>{
+    //实现这个接口时，若调用者>other，返回正数，相对返回0，否则返回负数
+    int compareTo(T other);
+}
+```
+
+## Lambda表达式
+
+### 函数式接口
+
+只有一个抽象方法的接口，需要这种接口的对象时，就可以提供一个Lambda表达式。
+
+### Lambda
+
+关注参数列表和方法体
+( )：用来描述参数列表
+{ }：用来描述方法体
+->：lambda运算符，读作goes to
+
+**基本写法**
+
+```
+@FunctionalInterface
+public interface Lambda1Return2Param {
+    int test(int a,int b);
+}
+
+public class main {
+    public static void main(String[] args) {
+        Lambda1Return2Param lambda1 = (int a,int b)->{
+            return a+b;
+        };
+        int result = lambda1.test(10,20);
+        System.out.println(result);
+    }}
+```
+-----
+**精简写法**
+精简1. 参数：由于在接口抽象方法中已经调用了参数数量和类型，所以在lambda表达式中参数的类型可以省略。可由接口推导。
+
+精简2. 参数小括号：如果参数的数量**只有一个**，此时小括号可以省略 
+
+精简3. 方法大括号：若果方法体中只有**一条语句**，此时大括号可以省略；如果方法体中唯一的一条语句是返回语句，则可在省略掉大括号的同时必须省略return关键字
+
+**语法进阶**
+方法引用：可以快速将一个lambda方法的实现指向一个已经实现的方法 
+方法引用的语法：方法的隶属者`::`方法名（静态方法使用 类名::方法名；非静态 对象::方法名）
+注意：
+1. 参数数量和类型一定要和接口中定义的方法一致
+2. 返回值得类型一定要和接口中定义的方法一致
+3. 如果是引用构造方法，则直接`对象类::new`
+```
+public class LambdaTest{
+    private static int change(int a,int b){
+        return a+b;
+    }
+     public static void main(String[] args){
+      Lambda1Return2Param lambda2 = LambdaTest::change;
+      int result = lambda1.test(10,20);
+      System.out.println(result);      //30
+    }
+}
+```
+使用Lambda实现线程的实例化
+```
+    public static void main(String[] args)  {
+        Thread t = new Thread(()->{
+            //run方法具体实现
+        });
+        t.start();
+    }
+```
+
+#集合
+
+Java为不同的集合定义了大量的**接口**，如下所示
+
+```
+Iterable 
+	|--- Collection
+				|--- List
+				|--- Set
+				| 	   |--- SortedSet
+				|				|--- NavigableSet
+				|--- Queue
+					   |--- Deque
+Map
+ |--- SortedMap
+ 		|--- NavigableMap
+ 		
+Iterator
+	|--- ListIterator
+```
+
+##Collection
 
 集合类的基本接口是`Collection`接口，`public interface Collection<E> extends Iterable<E>`
 
 这个接口有两个基本方法：
 
 ```java
-- boolean add(E element);
-- Iterator<E> iterator();	//返回一个迭代器对象，使用迭代器对象依次访问集合中的元素
+boolean add(E element);
+Iterator<E> iterator();	//返回一个迭代器对象，使用迭代器对象依次访问集合中的元素
+
+//更多方法
+int size();
+boolean isEmpty();
+boolean contains(Object obj);
+boolean containAll(Collenction<?> other);	//如果other是其真子集，返回true
+boolean add(E element);
+boolean addAll(Collection<? extends E> other);	//将other中所有元素添加到这个集合
+boolean remove(Object obj);
+boolean removeAll(Collenction<?> other);	//从这个集合中删除other集合中存在的所有元素
+default boolean removeIf(Predicate<? super E> filter);	//删除filter返回true的所有元素
+void clear();	//删除所有元素
+boolean retainAll(Collenction<?> other);	//删除所有与other集合中元素不同的元素	
+Object[] toArray();	//返回这个集合中的对象的数组
+<T> T[] toArray(T[] arrayToFill);	//返回这个集合中对象的数组，如果arrayToFill足够大，剩余空间补null;否则分配一个新数组，长度等于集合的大小，并填充集合元素。
 ```
 
 **迭代器**的使用：
@@ -197,10 +466,14 @@ implements Serializable, CharSequence
 public interface Iterator<E>{
     E next();
     boolean hasNext();
-    void remove();
+    void remove();	//删除上次调用next方法时返回的元素，和next方法存在依赖性，不能连续调用两次remove
     default void forEachRemaining(Consumer<? super E> action);
 }
 ```
+
+>  可以认为java的迭代器位于两个元素之间，当调用next时，迭代器就越过下一个元素，并返回刚刚越过的那个元素的引用。
+
+
 
 扩展了`Iterator`接口的都可以使用`for each`循环
 
@@ -210,6 +483,8 @@ public interface Iterator<E>{
 
 ### ArrayList
 
+线程不安全
+
 `public class ArrayList<E> extends AbstractList<E> implements List<E>, RandomAccess, Cloneable, Serializable`
 
 - 底层使用数组实现
@@ -217,16 +492,20 @@ public interface Iterator<E>{
 - 适用于查询比较多的时候，但是插入和删除比较少的情况下
 - 初始类型为`Object`，大小10，第一次扩容15，第二次扩容22，`ArrayList`扩容增加原值的一半，底层使用`Arrays.copyOf()`
 
-####ArrayList线程不安全
-
-1. 
-
 ###LinkedList
 
-`public class LinkedList<E> extends AbstractSequentialList<E> implements List<E>, Deque<E>, Cloneable, Serializable`
+线程不安全
+
+```java
+public class LinkedList<E> extends AbstractSequentialList<E> implements List<E>, Deque<E>, Cloneable, Serializable
+```
+
+LinkedList使用专用的ListIterator迭代器：`ListIterator<E> iter = list.listIterator();`
 
 - 底层使用双向链表实现 *(**在java中，所有链表都是双向链接的**)*
 - 适用于查询比较少而插入和删除比较多
+- LinkedList.add()默认采用尾插法
+- ListIterator.add()在指针所在处采用尾插法
 
 ## Vector
 
@@ -248,6 +527,11 @@ Vector实现了List接口，所以可以作为一个List来实现。`List<Object
 
 ```
 public class HashSet<E> extends AbstractSet<E> implements Set<E>, Cloneable, Serializable
+
+HashSet();
+HashSet(Collection<? extends E> elements);//构造并将集合中所有元素添加到散列集中
+HashSet(int initCapacity);
+HashSet(int initCapacity,float loadFactor);
 ```
 
 `HashSet`底层使用`HashMap`实现，每个value都是一个默认的值
@@ -257,6 +541,8 @@ public class HashSet<E> extends AbstractSet<E> implements Set<E>, Cloneable, Ser
 `TreeSet`是非重复的有序集合，`TreeSet`的底层是使用`TreeMap`实现，故添加的元素必须正确实现`Comparable`接口，如果没有实现`Comparable`接口，那么创建`TreeSet`时必须传入一个`Comparator`对象。
 
 遍历`SortedSet`按照元素的排序顺序遍历，也可以自定义排序算法。
+
+- 底层使用红黑树
 
 ## Queue
 
@@ -296,7 +582,7 @@ public interface Deque<E> extends Queue<E>
 - `E removeLast() / E pollLast()`获取队尾元素并从队列中删除
 - `E getLast() / E peekLast()`获取队尾元素但并不从队列中删除
 
-#Map
+##Map
 
 `public interface Map<K,V>` 
 
@@ -349,7 +635,7 @@ public class HashMap<K,V> extends AbstractMap<K,V> implements Map<K,V>, Cloneabl
 
 ### HashMap的自动扩容
 
-hashMap初始默认长度为16(0~15)，超出16会自动扩容至32，其长度总为2的n次方
+hashMap初始默认长度为16(0~15)，超出`长度*填充因子`会自动扩容至32，其长度总为2的n次方
 
 扩容导致数组长度增大，会重新计算`hashCode`对应索引，所以最好创建`HashMap`时就指定容量
 
@@ -1038,7 +1324,8 @@ public class Singleton{
 ### 其他并发场景下的注意事项
 
 1. 高并发场景下，避免使用“等于”判断作为终止条件，应为并发没有控制好的情况下可能发生等值判断被击穿的情况，使用大于或小于的区间判断比较好
-2. 
+
+#线程安全的集合
 
 
 
@@ -1153,7 +1440,7 @@ public interface Stream<T> extends BaseStream<T,Stream<T>>
 **final 修饰变量：**
 
 - 构建对象时必须显示指定初始值
-- 这个值不应该再被修改
+- 这个值不应该再被修改，修改的话编译器会报错
 
 **final修饰方法：**
 
@@ -1170,7 +1457,7 @@ public interface Stream<T> extends BaseStream<T,Stream<T>>
 
 **abstract修饰类：**
 
-- 抽象类不能用来实例化对象，抽象类的存在就是为了被继承，从而实现多态和统一的管理
+- 抽象类不能用来实例化对象，抽象类的存在就是为了做为基类被继承，从而实现多态和统一的管理
 - 抽象类可以没有抽象方法
 - 包含抽象方法的类一定是抽象类
 - 继承抽象类的子类必须实现父类的所有抽象方法，除非该子类也是抽象类
@@ -1178,6 +1465,7 @@ public interface Stream<T> extends BaseStream<T,Stream<T>>
 **abstract修饰方法：**
 
 - 抽象方法是一种没有任何实现的方法，其具体实现由子类提供
+- 包含抽象方法的类必须被声名为抽象类
 
 ## static
 
@@ -1926,6 +2214,108 @@ interface Hello {
    2. 需要实现的接口数组，至少需要传入一个接口进去；
    3. 用来处理接口方法调用的`InvocationHandler`实例。
 3. 将返回的`Object`强制转型为接口。
+
+# 异常、断言
+
+##异常
+
+所有的异常都是由Throwable继承而来，但在下一层立即分支为Error和Exception
+
+```
+Throwable
+	|--- Error
+	|--- Exception 
+			|--- IOException
+			|--- Runtime Exception
+```
+
+Error类层次结构描述了java运行时系统的内部错误和资源耗尽错误，出现这样的错误除了通知用户并妥善终止应用程序之外，几乎无能为力。
+
+由编程错误导致的异常属于`RuntimeException`，包括以下问题：
+
+- 错误的强制类型转换
+- 数组访问越界
+- 访问null指针
+
+不是派生于`RuntimeException`的异常包括：
+
+- 试图超越文件末尾继续读取数据
+- 试图打开一个不存在的文件
+- 视图根据给定的字符串查找Class对象，而这个字符串表示的类不存在
+
+**检查型异常：**派生于Error类或RuntimeException类的所有异常称为非检查型异常。
+
+**非检查型异常：**除了非检查型异常，其他都称为检查型异常。
+
+一个方法必须声明所有可能抛出的检查型异常，尽力避免能控制的非检查型异常（RuntimeException）
+
+###捕获异常
+
+想要捕获一个异常，需要设置try/catch语句块，可以有多个catch子句，常见有以下三种情况：
+
+1. 如果try语句块中任何代码抛出了catch子类中指定的异常类，那么程序将跳过try语句块的其它代码，直接执行catch子句中的代码；
+2. 如果try语句块没有抛出异常，程序将跳过catch子句；
+3. 如果方法中的任何代码抛出了catch子句中没有声名的一个异常类型，这个方法就会立即退出（希望它的调用者捕获了异常）
+
+**finally子句：**
+
+try/catch语句中无论是否发生异常都会执行finally子句。
+
+finally子句主要用于清理资源，不要把改变控制流的语句（return, throw, break, continue)放在finally子句中。
+
+**try-with-Resource语句：**
+
+```java
+try(Resource res = ...){	//可指定多个资源或之前声名的资源变量名
+    //无论这个块如何退出，都会调用res.close()关闭资源
+}
+```
+
+###抛出异常
+
+如果你不想处理发生的异常，可以使用throw将异常抛出给调用者处理。
+
+你也可以在将catch中捕获到的异常再次抛出：（开发供他人使用的方法时或想要抛出一个检查型异常时都可以封装异常）
+
+```java
+try{
+    /access the database
+}catch(SQLException original){
+    Exception e = new ServletException("database error");
+    e.initCase(original);	//将原始异常封装起来，可以抛出高层异常而不会丢失原始异常的细节
+    throw e;
+}
+```
+
+###异常最佳实践
+
+1. 只在异常情况下使用异常（如果可以通过检查避免出错，则避免使用不要使用try/catch，捕获异常会花费更多的时间）
+2. 不要过分细化异常
+3. 充分利用异常层次结构
+   1. 不要只抛出RuntimeException异常，应该寻找一个适合的子类或创建自己的异常类
+   2. 不要只捕获异常，否则会使代码更难读
+   3. 如果能将一种异常转换为另一种更加合适的异常，那么不要犹豫。
+4. 不要压制异常（即catch子句中什么也不写）
+5. 异常应该”早抛出，晚捕获“
+
+## 断言
+
+断言机制允许在测试期间向代码中插入一些检查，而在生产代码中会自动删除这些检查。
+
+断言失败是致命的，不可恢复的错误；断言检查只是在开发和测试阶段打开。
+
+```java
+assert condition;	//如果条件为false,会抛出一个AssertionError
+assert condition : expression;	//除了抛出AssertionError外，expression将传入AssertionError
+```
+
+
+
+默认情况下，断言是禁用的。可以在运行程序时使用`-encbleassertions`或`-ea`来启用断言
+
+# 日期类
+
+
 
 # 注解
 
